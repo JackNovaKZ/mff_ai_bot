@@ -1,4 +1,4 @@
-# main.py - ПОЛНЫЙ ИСПРАВЛЕННЫЙ КОД
+# main.py - ИСПРАВЛЕННЫЙ КОД (без API ключа в коде)
 
 import os
 import sys
@@ -48,6 +48,7 @@ logger = logging.getLogger(__name__)
 
 # Получаем переменные
 TOKEN = os.getenv("TELEGRAM_TOKEN")
+DEEPSEEK_API_KEY = os.getenv("DEEPSEEK_API_KEY")  # Используем переменную окружения
 
 logger.info("=" * 60)
 logger.info("🤖 STARTING MFF BOT WITH DEEPSEEK")
@@ -57,7 +58,13 @@ if not TOKEN:
     logger.error("❌ Missing TELEGRAM_TOKEN!")
     sys.exit(1)
 
+if not DEEPSEEK_API_KEY:
+    logger.error("❌ Missing DEEPSEEK_API_KEY!")
+    logger.error("ℹ️ Please add DEEPSEEK_API_KEY to Render environment variables")
+    sys.exit(1)
+
 logger.info(f"✅ Telegram Token: {TOKEN[:10]}...")
+logger.info(f"✅ DeepSeek API Key: {DEEPSEEK_API_KEY[:10]}...")
 
 # Инициализация
 bot = Bot(token=TOKEN)
@@ -74,7 +81,7 @@ async def ask_deepseek(character: str, user_message: str) -> str:
 Ты общаешься с учеником 6 класса, который учит английский.
 
 ВАЖНО: Всегда отвечай на вопросы ученика прямо и чётко!
-Отвечай только на английном, коротко (1-2 предложения), дружелюбно.
+Отвечай только на английском, коротко (1-2 предложения), дружелюбно.
 
 Примеры:
 - "How old are you?" -> "I'm 13 years old!"
@@ -111,7 +118,7 @@ async def ask_deepseek(character: str, user_message: str) -> str:
             }
             
             headers = {
-                "Authorization": "Bearer sk-3b6b2e69c99c4c69966e6e64a7a2e9c2",
+                "Authorization": f"Bearer {DEEPSEEK_API_KEY}",
                 "Content-Type": "application/json"
             }
             
