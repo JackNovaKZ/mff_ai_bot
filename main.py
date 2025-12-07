@@ -7,8 +7,8 @@ from aiogram import Bot, Dispatcher, types
 from aiogram.filters import Command
 from aiogram.types import InlineKeyboardButton
 from aiogram.utils.keyboard import InlineKeyboardBuilder
-from openai import OpenAI
 from http.server import HTTPServer, BaseHTTPRequestHandler
+import google.generativeai as genai  # <-- НОВЫЙ ИМПОРТ
 
 # ========== HTTP СЕРВЕР ДЛЯ RENDER ==========
 class HealthHandler(BaseHTTPRequestHandler):
@@ -46,21 +46,26 @@ logger = logging.getLogger(__name__)
 
 # Получаем переменные
 TOKEN = os.getenv("TELEGRAM_TOKEN")
-OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
+GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")  # <-- ИЗМЕНЕНО
 
 logger.info("=" * 60)
 logger.info("🤖 STARTING MFF TELEGRAM BOT")
 logger.info("=" * 60)
 
-if not TOKEN or not OPENAI_API_KEY:
-    logger.error("❌ Missing environment variables!")
+if not TOKEN:
+    logger.error("❌ Missing TELEGRAM_TOKEN!")
     sys.exit(1)
 
 logger.info(f"✅ Telegram Token: {TOKEN[:10]}...")
-logger.info(f"✅ OpenAI Key: {OPENAI_API_KEY[:10]}...")
+
+# Настройка Gemini
+if GEMINI_API_KEY:
+    genai.configure(api_key=GEMINI_API_KEY)
+    logger.info(f"✅ Gemini API Key: {GEMINI_API_KEY[:10]}...")
+else:
+    logger.warning("⚠️ No Gemini API Key, will use fallback responses")
 
 # Инициализация
-client = OpenAI(api_key=OPENAI_API_KEY)
 bot = Bot(token=TOKEN)
 dp = Dispatcher()
 
@@ -125,6 +130,35 @@ async def select_character(callback: types.CallbackQuery):
     await callback.message.answer(greeting)
     logger.info(f"User {user_id} selected {character}")
 
+# Функция для получения ответа от Gemini
+async def get_gemini_response(character: str, user_message: str) -> str:
+    """Получаем ответ от Gemini API"""
+    try:
+        if not GEMINI_API_KEY:
+            raise Exception("No Gemini API key")
+        
+        # Подготовка промпта
+        system_prompt = CHARACTERS[character]
+        full_prompt = f"{system_prompt}\n\nUser: {user_message}\n\nYour response:"
+        
+        # Создаем модель
+        model = genai.GenerativeModel('gemini-pro')
+        
+        # Генерируем ответ
+        response = model.generate_content(
+            full_prompt,
+            generation_config={
+                'max_output_tokens': 150,
+                'temperature': 0.7,
+            }
+        )
+        
+        return response.text.strip()
+        
+    except Exception as e:
+        logger.error(f"Gemini error: {e}")
+        raise
+
 # Обработка сообщений
 @dp.message()
 async def handle_message(message: types.Message):
@@ -150,25 +184,34 @@ async def handle_message(message: types.Message):
     character = user_sessions[user_id]
     
     try:
-        # Запрос к OpenAI
-        response = client.chat.completions.create(
-            model="gpt-3.5-turbo",
-            messages=[
-                {"role": "system", "content": CHARACTERS[character]},
-                {"role": "user", "content": message.text}
-            ],
-            temperature=0.7,
-            max_tokens=150
-        )
+        # Запрос к Gemini
+        reply = await get_gemini_response(character, message.text)
         
-        reply = response.choices[0].message.content
+        # Если Gemini вернул пустой ответ
+        if not reply:
+            raise Exception("Empty response from Gemini")
+            
         await message.answer(reply)
-        
         logger.info(f"Bot ({character}): {reply[:50]}...")
         
     except Exception as e:
-        logger.error(f"OpenAI error: {e}")
-        await message.answer("Sorry, technical issues. Try again in a moment!")
+        logger.error(f"AI error: {e}")
+        # Fallback ответы
+        fallback_responses = {
+            "Emily": [
+                "Hi there! 😊 What would you like to talk about?",
+                "Hey! How's your day going?",
+                "Nice to chat with you! What are your hobbies?"
+            ],
+            "John": [
+                "Hello! ⚽ Ready for a conversation?",
+                "Hey there! What's on your mind?",
+                "Good to see you! Want to chat about sports or games?"
+            ]
+        }
+        import random
+        reply = random.choice(fallback_responses[character])
+        await message.answer(reply)
 
 # Запуск Telegram бота
 async def run_telegram_bot():
