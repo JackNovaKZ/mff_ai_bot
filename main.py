@@ -6,61 +6,48 @@ from aiogram.filters import Command
 from aiogram.types import InlineKeyboardButton
 from aiogram.utils.keyboard import InlineKeyboardBuilder
 from openai import OpenAI
-from aiogram.webhook.aiohttp_server import SimpleRequestHandler, setup_application
+from aiogram.webhook.aiohttp_server import SimpleRequestHandler
 from aiohttp import web
 
-# Настройка логирования
-logging.basicConfig(level=logging.INFO, stream=sys.stderr)
+# НАСТРОЙКА ЛОГИРОВАНИЯ
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+    stream=sys.stderr
+)
 logger = logging.getLogger(__name__)
 
-# Получаем переменные
+logger.info("=" * 60)
+logger.info("🚀 STARTING MFF BOT WEB SERVER")
+logger.info("=" * 60)
+
+# ПЕРЕМЕННЫЕ ОКРУЖЕНИЯ
 TOKEN = os.getenv("TELEGRAM_TOKEN")
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
+WEBHOOK_HOST = os.getenv("WEBHOOK_HOST", "https://mff-ai-bot-5.onrender.com")
+PORT = int(os.getenv("PORT", 10000))
 
-logger.info("=" * 60)
-logger.info("🚀 ЗАПУСК MFF БОТА (WEBHOOK MODE)")
-logger.info("=" * 60)
-
-# Проверка переменных
-if not TOKEN:
-    logger.error("❌ TELEGRAM_TOKEN не найден!")
+if not TOKEN or not OPENAI_API_KEY:
+    logger.error("❌ Missing environment variables!")
     sys.exit(1)
 
-if not OPENAI_API_KEY:
-    logger.error("❌ OPENAI_API_KEY не найден!")
-    sys.exit(1)
+logger.info(f"✅ Telegram Token: {TOKEN[:10]}...")
+logger.info(f"✅ OpenAI Key: {OPENAI_API_KEY[:10]}...")
 
-logger.info(f"✅ Токен: {TOKEN[:10]}...")
-logger.info(f"✅ OpenAI ключ: {OPENAI_API_KEY[:10]}...")
-
-# Инициализация
+# ИНИЦИАЛИЗАЦИЯ
 client = OpenAI(api_key=OPENAI_API_KEY)
 bot = Bot(token=TOKEN)
 dp = Dispatcher()
 
-# Промпты для персонажей
+# ПРОМПТЫ
 CHARACTERS = {
-    "Emily": """You are Emily Carter, 13 years old from San Diego, California, USA.
-You are friendly, positive and a bit talkative.
-You like: drawing, music, beach, beginner surfing, Roblox, pop-punk music, sushi rolls, ice cream, milkshakes.
-You dislike: math homework, fish, extreme heat.
-You are chatting with a 6th-grade student learning English. Speak ONLY in English.
-Keep your responses simple, friendly and helpful for language practice.
-If user says "Bottle of water", reply: "Okay, I'm back. What's interesting with you?" """,
-    
-    "John": """You are John Williams, 12 years old from Cambridge, UK.
-You are friendly, calm and patient with language learners.
-You like: football, cricket, volunteering, playing with younger brother, chess, cherry pie, fresh pastries, milk tea, bubble tea.
-You dislike: fish, broccoli, horror movies, math (but you manage), skateboarding after falling.
-You speak English and basic French. Chat ONLY in English.
-Keep sentences simple for a 6th-grade ESL student.
-If user says "Bottle of water", reply: "Okay. Funny. I'll stay for 30 minutes more. Do you have something important?" """
+    "Emily": """You are Emily, 13 years old from California. Speak friendly English to help students learn. Keep responses simple.""",
+    "John": """You are John, 12 years old from UK. Speak simple English to help students practice. Be patient and friendly."""
 }
 
-# Хранение выбора пользователей
 user_sessions = {}
 
-# Клавиатура выбора персонажа
+# КЛАВИАТУРА
 def get_characters_keyboard():
     builder = InlineKeyboardBuilder()
     builder.row(
@@ -69,53 +56,39 @@ def get_characters_keyboard():
     )
     return builder.as_markup()
 
-# Команда /start
+# КОМАНДА /START
 @dp.message(Command("start"))
 async def cmd_start(message: types.Message):
-    logger.info(f"👤 User {message.from_user.id} sent /start")
+    logger.info(f"User {message.from_user.id}: /start")
     await message.answer(
-        "👋 Welcome to **MFF - My Foreign Friend!**\n\n"
-        "Practice English by chatting with virtual friends:\n\n"
-        "• **Emily** - 13 years, California, loves drawing & surfing\n"
-        "• **John** - 12 years, UK, loves football & chess\n\n"
-        "Choose your conversation partner:",
-        reply_markup=get_characters_keyboard(),
-        parse_mode="Markdown"
+        "👋 Welcome to MFF!\nChoose your friend:",
+        reply_markup=get_characters_keyboard()
     )
 
-# Выбор персонажа
+# ВЫБОР ПЕРСОНАЖА
 @dp.callback_query(lambda c: c.data and c.data.startswith("char_"))
 async def select_character(callback: types.CallbackQuery):
     user_id = callback.from_user.id
     character = callback.data.split("_")[1]
     user_sessions[user_id] = character
     
-    if character == "Emily":
-        greeting = "Hi there! 😊 I'm Emily from sunny California! Do you like drawing or maybe surfing? I'm still learning but it's so fun!"
-    else:
-        greeting = "Hello! ⚽ I'm John from Cambridge. Nice to meet you! Do you play football or chess? I love both!"
-    
+    greeting = f"Hi! I'm {character}. Let's chat in English! 😊"
     await callback.answer(f"You chose {character}!")
     await callback.message.answer(greeting)
     logger.info(f"User {user_id} selected {character}")
 
-# Обработка сообщений
+# ОБРАБОТКА СООБЩЕНИЙ
 @dp.message()
 async def handle_message(message: types.Message):
     user_id = message.from_user.id
     
-    # Пропускаем команды
-    if message.text and message.text.startswith('/'):
+    if not message.text or message.text.startswith('/'):
         return
     
-    logger.info(f"User {user_id} message: {message.text}")
-    
-    # Проверяем, выбран ли персонаж
     if user_id not in user_sessions:
-        await message.answer("Please choose a character first with /start")
+        await message.answer("Please choose a character with /start")
         return
     
-    # Показываем "печатает..."
     try:
         await bot.send_chat_action(chat_id=message.chat.id, action="typing")
     except:
@@ -124,7 +97,6 @@ async def handle_message(message: types.Message):
     character = user_sessions[user_id]
     
     try:
-        # Запрос к OpenAI
         response = client.chat.completions.create(
             model="gpt-3.5-turbo",
             messages=[
@@ -132,65 +104,65 @@ async def handle_message(message: types.Message):
                 {"role": "user", "content": message.text}
             ],
             temperature=0.7,
-            max_tokens=150
+            max_tokens=100
         )
         
         reply = response.choices[0].message.content
         await message.answer(reply)
-        
-        logger.info(f"Bot reply ({character}): {reply[:50]}...")
+        logger.info(f"Reply to {user_id}: {reply[:30]}...")
         
     except Exception as e:
         logger.error(f"OpenAI error: {e}")
-        await message.answer("Sorry, I'm having connection issues. Try again in a moment!")
+        await message.answer("Sorry, technical issues. Try again!")
 
-# Настройка вебхука
-WEBHOOK_HOST = "https://mff-ai-bot-5.onrender.com"  # Ваш URL из логов
+# ВЕБ-СЕРВЕР И ВЕБХУКИ
 WEBHOOK_PATH = "/webhook"
 WEBHOOK_URL = f"{WEBHOOK_HOST}{WEBHOOK_PATH}"
-PORT = 10000
 
 logger.info(f"🌐 Webhook URL: {WEBHOOK_URL}")
 logger.info(f"🔌 Port: {PORT}")
 
-async def on_startup(bot: Bot):
+async def on_startup(app):
     await bot.set_webhook(WEBHOOK_URL)
-    logger.info(f"✅ Webhook установлен: {WEBHOOK_URL}")
+    logger.info(f"✅ Webhook set: {WEBHOOK_URL}")
 
-async def on_shutdown(bot: Bot):
+async def on_shutdown(app):
     await bot.delete_webhook()
-    logger.info("✅ Webhook удален")
+    logger.info("✅ Webhook removed")
 
-# Запуск веб-сервера
+# HEALTH CHECK
+async def health_check(request):
+    return web.Response(text="✅ MFF Bot is running!\nSend /start in Telegram")
+
+# СОЗДАНИЕ И ЗАПУСК СЕРВЕРА
 def main():
-    logger.info("🌍 Starting web server...")
+    logger.info("🌍 Creating web application...")
     
-    # Создаем веб-приложение
     app = web.Application()
     
-    # Создаем обработчик вебхука
-    webhook_handler = SimpleRequestHandler(
-        dispatcher=dp,
-        bot=bot,
-    )
-    
     # Регистрируем вебхук
-    webhook_handler.register(app, path=WEBHOOK_PATH)
+    handler = SimpleRequestHandler(dp, bot)
+    handler.register(app, path=WEBHOOK_PATH)
     
-    # Добавляем простой маршрут для проверки
-    async def health_check(request):
-        return web.Response(text="✅ MFF Bot is running!")
-    
+    # Добавляем health check
     app.router.add_get('/', health_check)
+    app.router.add_get('/health', health_check)
     
-    # Настройка startup/shutdown
+    # Startup/shutdown
     app.on_startup.append(on_startup)
     app.on_shutdown.append(on_shutdown)
     
+    logger.info(f"🚀 Starting server on port {PORT}...")
     logger.info("🤖 Bot is ready! Send /start in Telegram")
     
     # Запускаем сервер
-    web.run_app(app, host='0.0.0.0', port=PORT)
+    web.run_app(
+        app,
+        host='0.0.0.0',
+        port=PORT,
+        access_log=logger,
+        print=None  # Отключаем стандартный вывод aiohttp
+    )
 
 if __name__ == "__main__":
     main()
