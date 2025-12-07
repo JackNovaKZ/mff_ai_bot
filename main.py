@@ -78,7 +78,7 @@ async def ask_deepseek(character: str, user_message: str) -> str:
 - "Where are you from?" → "I'm from San Diego, California!"
 - "What do you like?" → "I love drawing and surfing!"
 
-Если не понимаешь вопрос, скажи: "Could you ask that differently?""""
+Если не понимаешь вопрос, скажи: "Could you ask that differently?""
         else:  # John
             system_prompt = """Ты John Williams, 12 лет из Кембриджа, Англия.
 Ты спокойный, терпеливый, любишь футбол, шахматы и видеоигры.
