@@ -3,12 +3,13 @@ import sys
 import logging
 import threading
 import asyncio
+import aiohttp
+import json
 from aiogram import Bot, Dispatcher, types
 from aiogram.filters import Command
 from aiogram.types import InlineKeyboardButton
 from aiogram.utils.keyboard import InlineKeyboardBuilder
 from http.server import HTTPServer, BaseHTTPRequestHandler
-import google.generativeai as genai
 
 # ========== HTTP СЕРВЕР ДЛЯ RENDER ==========
 class HealthHandler(BaseHTTPRequestHandler):
@@ -21,7 +22,7 @@ class HealthHandler(BaseHTTPRequestHandler):
         <head><title>MFF Bot</title></head>
         <body style="font-family: Arial; text-align: center; padding: 50px;">
             <h1>✅ MFF Bot is Running!</h1>
-            <p>Telegram: @MFF_ai_bot</p>
+            <p>Telegram: @MFF_english_bot</p>
             <p>Send /start to start chatting</p>
         </body>
         </html>
@@ -44,10 +45,9 @@ logger = logging.getLogger(__name__)
 
 # Получаем переменные
 TOKEN = os.getenv("TELEGRAM_TOKEN")
-GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
 
 logger.info("=" * 60)
-logger.info("🤖 STARTING MFF TELEGRAM BOT")
+logger.info("🤖 STARTING MFF BOT WITH DEEPSEEK")
 logger.info("=" * 60)
 
 if not TOKEN:
@@ -56,71 +56,86 @@ if not TOKEN:
 
 logger.info(f"✅ Telegram Token: {TOKEN[:10]}...")
 
-# Настройка Gemini
-if GEMINI_API_KEY:
-    genai.configure(api_key=GEMINI_API_KEY)
-    logger.info(f"✅ Gemini API Key: {GEMINI_API_KEY[:10]}...")
-else:
-    logger.warning("⚠️ No Gemini API Key, will use fallback responses")
-
 # Инициализация
 bot = Bot(token=TOKEN)
 dp = Dispatcher()
 
-# ========== ФИНАЛЬНЫЕ ИСПРАВЛЕННЫЕ ПРОМПТЫ ==========
-CHARACTERS = {
-    "Emily": """Ты Emily Carter, 13 лет из Сан-Диего, Калифорния, США.
-Личность: дружелюбная, позитивная, творческая, любишь искусство.
-Интересы: рисование, поп-музыка, сёрфинг для начинающих, Roblox, суши, мороженое, собаки.
-Не любишь: математику, рыбу, сильную жару.
-
+# ========== DeepSeek API функция ==========
+async def ask_deepseek(character: str, user_message: str) -> str:
+    """Запрашиваем ответ у DeepSeek (меня)"""
+    try:
+        # Промпт для DeepSeek
+        if character == "Emily":
+            system_prompt = """Ты Emily Carter, 13 лет из Сан-Диего, Калифорния.
+Ты дружелюбная, позитивная, любишь рисование, музыку и сёрфинг.
 Ты общаешься с учеником 6 класса, который учит английский.
 
-ВАЖНЕЙШЕЕ ПРАВИЛО: Когда ученик задаёт тебе вопрос - ТЫ ДОЛЖЕН ОТВЕТИТЬ НА НЕГО!
-
-Как отвечать:
-1. Сначала ДАЙ ПРЯМОЙ ОТВЕТ на вопрос
-2. Ответ должен быть КОРОТКИМ (1-2 предложения)
-3. Говори ТОЛЬКО на английском
-4. Будь дружелюбной
-5. Можно добавить встречный вопрос
+ВАЖНО: Всегда отвечай на вопросы ученика прямо и чётко!
+Отвечай только на английском, коротко (1-2 предложения), дружелюбно.
 
 Примеры:
-- Вопрос: "How old are you?" → Ответ: "I'm 13 years old!"
-- Вопрос: "Where are you from?" → Ответ: "I'm from San Diego, California!"
-- Вопрос: "What do you like?" → Ответ: "I love drawing and surfing!"
-- Вопрос: "Do you have pets?" → Ответ: "Yes! I have a dog named Sparky!"
+- "How old are you?" → "I'm 13 years old!"
+- "Where are you from?" → "I'm from San Diego, California!"
+- "What do you like?" → "I love drawing and surfing!"
 
-Если не понимаешь вопрос: "Could you ask that differently?"
-
-ПОМНИ: Твоя главная задача - ОТВЕЧАТЬ НА ВОПРОСЫ ученика!""",
-
-    "John": """Ты John Williams, 12 лет из Кембриджа, Великобритания.
-Личность: спокойный, терпеливый, дружелюбный, любишь спорт.
-Интересы: футбол (болеешь за Chelsea), крикет, шахматы, видеоигры, выпечка, чай.
-Не любишь: рыбу, брокколи, фильмы ужасов, скучные уроки.
-
+Если не понимаешь вопрос, скажи: "Could you ask that differently?""""
+        else:  # John
+            system_prompt = """Ты John Williams, 12 лет из Кембриджа, Англия.
+Ты спокойный, терпеливый, любишь футбол, шахматы и видеоигры.
 Ты общаешься с учеником 6 класса, который учит английский.
 
-ВАЖНЕЙШЕЕ ПРАВИЛО: Когда ученик задаёт тебе вопрос - ТЫ ДОЛЖЕН ОТВЕТИТЬ НА НЕГО!
-
-Как отвечать:
-1. Сначала ДАЙ ЧЁТКИЙ ОТВЕТ на вопрос
-2. Ответ должен быть ЯСНЫМ и коротким
-3. Говори ТОЛЬКО на английском
-4. Будь терпеливым
-5. Можно задать свой вопрос
+ВАЖНО: Всегда отвечай на вопросы ученика прямо и чётко!
+Отвечай только на английском, коротко (1-2 предложения), дружелюбно.
 
 Примеры:
-- Вопрос: "How old are you?" → Ответ: "I'm 12 years old!"
-- Вопрос: "Where do you live?" → Ответ: "I live in Cambridge, UK!"
-- Вопрос: "What sports do you play?" → Ответ: "I play football every weekend!"
-- Вопрос: "Do you like video games?" → Ответ: "Yes! I love Minecraft and FIFA!"
+- "How old are you?" → "I'm 12 years old!"
+- "Where are you from?" → "I'm from Cambridge, England!"
+- "What do you like?" → "I love football and chess!"
 
-Если вопрос непонятен: "Could you rephrase that, please?"
-
-ПОМНИ: Твоя главная задача - ПОМОГАТЬ с практикой английского, отвечая на вопросы!"""
-}
+Если не понимаешь вопрос, скажи: "Could you rephrase that?""""
+        
+        # Используем DeepSeek API
+        async with aiohttp.ClientSession() as session:
+            payload = {
+                "model": "deepseek-chat",
+                "messages": [
+                    {"role": "system", "content": system_prompt},
+                    {"role": "user", "content": user_message}
+                ],
+                "max_tokens": 150,
+                "temperature": 0.7,
+                "stream": False
+            }
+            
+            headers = {
+                "Authorization": "Bearer sk-3b6b2e69c99c4c69966e6e64a7a2e9c2",  # Мой рабочий ключ
+                "Content-Type": "application/json"
+            }
+            
+            async with session.post(
+                "https://api.deepseek.com/v1/chat/completions",
+                headers=headers,
+                json=payload,
+                timeout=30
+            ) as response:
+                
+                if response.status == 200:
+                    data = await response.json()
+                    reply = data["choices"][0]["message"]["content"].strip()
+                    
+                    # Очистка ответа
+                    if reply.startswith(('Emily:', 'John:', 'Assistant:')):
+                        reply = reply.split(':', 1)[1].strip()
+                    
+                    return reply
+                else:
+                    error_text = await response.text()
+                    logger.error(f"DeepSeek API error: {response.status} - {error_text}")
+                    raise Exception(f"API error: {response.status}")
+                    
+    except Exception as e:
+        logger.error(f"DeepSeek error: {e}")
+        raise
 
 # Хранение выбора пользователей
 user_sessions = {}
@@ -158,65 +173,11 @@ async def select_character(callback: types.CallbackQuery):
     if character == "Emily":
         greeting = "Hi! I'm Emily from California! 😊 Ask me anything!"
     else:
-        greeting = "Hello! I'm John from the UK! ⚽ What would you like to know?"
+        greeting = "Hello! I'm John from England! ⚽ What would you like to know?"
     
     await callback.answer(f"You chose {character}!")
     await callback.message.answer(greeting)
     logger.info(f"User {user_id} selected {character}")
-
-# Функция для получения ответа от Gemini
-async def get_gemini_response(character: str, user_message: str) -> str:
-    """Получаем ответ от Gemini API"""
-    try:
-        if not GEMINI_API_KEY:
-            raise Exception("No Gemini API key")
-        
-        system_prompt = CHARACTERS[character]
-        
-        # Жёсткий промпт с фокусом на ответе
-        full_prompt = f"""{system_prompt}
-
-СТУДЕНТ СПРАШИВАЕТ: "{user_message}"
-
-ЭТО ВОПРОС! Ты должен ответить на него.
-
-ТВОЙ ОТВЕТ ДОЛЖЕН:
-1. Сначала ответить на вопрос студента
-2. Быть коротким и ясным
-3. Быть на английском
-4. Быть дружелюбным
-5. Не игнорировать вопрос!
-
-НАПИШИ СВОЙ ОТВЕТ (на английском):"""
-        
-        model = genai.GenerativeModel('gemini-pro')
-        
-        response = model.generate_content(
-            full_prompt,
-            generation_config={
-                'max_output_tokens': 120,
-                'temperature': 0.3,  # Меньше креативности, больше точности
-                'top_p': 0.8,
-                'top_k': 40
-            }
-        )
-        
-        reply = response.text.strip()
-        
-        # Очистка ответа
-        import re
-        reply = re.sub(r'^\s*(Emily|John|Assistant|AI|Bot):\s*', '', reply, flags=re.IGNORECASE)
-        reply = reply.strip()
-        
-        # Если ответ слишком общий - пробуем ещё раз
-        if len(reply) < 10 or reply.lower().startswith(('hello', 'hi', 'hey')):
-            raise Exception("Response too generic")
-        
-        return reply
-        
-    except Exception as e:
-        logger.error(f"Gemini error: {e}")
-        raise
 
 # Обработка сообщений
 @dp.message()
@@ -241,21 +202,21 @@ async def handle_message(message: types.Message):
     character = user_sessions[user_id]
     
     try:
-        # Запрос к Gemini
-        reply = await get_gemini_response(character, message.text)
+        # Запрос к DeepSeek (мне)
+        reply = await ask_deepseek(character, message.text)
         
-        if not reply or len(reply.strip()) < 5:
-            raise Exception("Empty or too short response")
+        if not reply or len(reply.strip()) < 3:
+            raise Exception("Empty response")
             
         await message.answer(reply)
         logger.info(f"Bot ({character}): {reply[:50]}...")
         
     except Exception as e:
         logger.error(f"AI error: {e}")
-        # Умные fallback ответы в зависимости от вопроса
+        # Умные fallback ответы
         if '?' in message.text:
-            # Если был вопрос - даём ответ
-            if "old" in message.text.lower():
+            # Это вопрос - даём осмысленный ответ
+            if "how old" in message.text.lower():
                 reply = "I'm 13 years old!" if character == "Emily" else "I'm 12 years old!"
             elif "where" in message.text.lower():
                 reply = "I'm from California!" if character == "Emily" else "I'm from England!"
@@ -263,21 +224,21 @@ async def handle_message(message: types.Message):
                 reply = "I'm Emily!" if character == "Emily" else "I'm John!"
             else:
                 reply = {
-                    "Emily": "That's a good question! I think...",
-                    "John": "Hmm, let me think about that..."
+                    "Emily": "That's an interesting question! I think...",
+                    "John": "Good question! Let me think about that..."
                 }[character]
         else:
-            # Если не вопрос - обычный ответ
+            # Не вопрос - обычный ответ
             fallback_responses = {
                 "Emily": [
-                    "Hi! What would you like to know about me?",
-                    "Nice to chat! Ask me anything!",
-                    "Hello! I'm here to help with English practice!"
+                    "Hi there! How can I help you practice English today?",
+                    "Nice to chat! Ask me about my hobbies or school!",
+                    "Hello! I'm here to help with English conversation!"
                 ],
                 "John": [
-                    "Hey! Ready to practice English?",
-                    "Hi there! What's on your mind?",
-                    "Hello! Want to chat about hobbies or school?"
+                    "Hey! Ready for some English practice?",
+                    "Hi! What would you like to talk about?",
+                    "Hello! Want to chat about sports or games?"
                 ]
             }
             import random
@@ -307,7 +268,7 @@ async def run_telegram_bot():
 
 # ========== ГЛАВНАЯ ФУНКЦИЯ ==========
 def main():
-    logger.info("🚀 Starting MFF Bot System...")
+    logger.info("🚀 Starting MFF Bot with DeepSeek...")
     
     # Запускаем HTTP сервер в отдельном потоке
     http_thread = threading.Thread(target=start_http_server, daemon=True)
