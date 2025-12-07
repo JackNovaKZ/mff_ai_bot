@@ -174,7 +174,6 @@ async def get_gemini_response(character: str, user_message: str) -> str:
         
         system_prompt = CHARACTERS[character]
         
-        # Улучшенный промпт с чёткой структурой
         full_prompt = f"""{system_prompt}
 
 ВАЖНО: Ученик только что написал сообщение. Ты должен ответить на английском.
@@ -192,8 +191,8 @@ async def get_gemini_response(character: str, user_message: str) -> str:
         response = model.generate_content(
             full_prompt,
             generation_config={
-                'max_output_tokens': 120,  # Ещё короче
-                'temperature': 0.4,        # Баланс между креативностью и точностью
+                'max_output_tokens': 120,
+                'temperature': 0.4,
                 'top_p': 0.9,
                 'top_k': 50
             }
@@ -225,13 +224,11 @@ async def get_gemini_response(character: str, user_message: str) -> str:
 async def handle_message(message: types.Message):
     user_id = message.from_user.id
     
-    # Пропускаем команды
     if not message.text or message.text.startswith('/'):
         return
     
     logger.info(f"User {user_id}: {message.text[:50]}...")
     
-    # Проверяем, выбран ли персонаж
     if user_id not in user_sessions:
         await message.answer("Please choose a character first with /start")
         return
@@ -248,7 +245,6 @@ async def handle_message(message: types.Message):
         # Запрос к Gemini
         reply = await get_gemini_response(character, message.text)
         
-        # Проверка ответа
         if not reply or len(reply.strip()) < 3:
             raise Exception("Empty or too short response")
             
@@ -278,7 +274,7 @@ async def handle_message(message: types.Message):
         reply = random.choice(fallback_responses[character])
         await message.answer(reply)
 
-# Запуск Telegram бота
+# ========== ИСПРАВЛЕННЫЙ ЗАПУСК ==========
 async def run_telegram_bot():
     """Запуск Telegram бота в режиме polling"""
     logger.info("🤖 Starting Telegram bot polling...")
@@ -287,16 +283,26 @@ async def run_telegram_bot():
     await bot.delete_webhook(drop_pending_updates=True)
     logger.info("🗑️ Old webhooks cleared")
     
+    # Принудительно закрываем старые сессии
+    try:
+        await bot.session.close()
+        logger.info("🔒 Old bot session closed")
+    except Exception as e:
+        logger.info(f"ℹ️ No old session to close: {e}")
+    
+    # Пауза для cleanup
+    await asyncio.sleep(3)
+    logger.info("⏱️ Waited 3 seconds for cleanup")
+    
     # Запускаем polling
-    await dp.start_polling(bot)
-
-def start_bot():
-    """Запуск бота в отдельном потоке"""
-    asyncio.run(run_telegram_bot())
+    logger.info("🚀 Starting fresh polling...")
+    await dp.start_polling(bot, allowed_updates=dp.resolve_used_update_types())
 
 # ========== ГЛАВНАЯ ФУНКЦИЯ ==========
 def main():
     logger.info("🚀 Starting MFF Bot System...")
+    logger.info(f"🆔 Process ID: {os.getpid()}")
+    logger.info(f"📁 Working dir: {os.getcwd()}")
     
     # Запускаем HTTP сервер в отдельном потоке
     http_thread = threading.Thread(target=start_http_server, daemon=True)
