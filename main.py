@@ -1,94 +1,25 @@
+import sys
 import os
-import asyncio
-from aiogram import Bot, Dispatcher, types
-from aiogram.filters import Command
-from aiogram.webhook.aiohttp_server import SimpleRequestHandler
-from aiohttp import web
-from dotenv import load_dotenv
 
-load_dotenv()
+# Принудительно пишем в stderr - это точно попадет в логи
+sys.stderr.write("\n" + "="*60 + "\n")
+sys.stderr.write("🚀 ЗАПУСК ТЕСТА\n")
+sys.stderr.write("="*60 + "\n\n")
 
-TOKEN = os.getenv("TELEGRAM_TOKEN")
-WEBHOOK_HOST = os.getenv("WEBHOOK_HOST")  # https://your-service.onrender.com
-WEBHOOK_PATH = "/webhook"
-WEBHOOK_URL = f"{WEBHOOK_HOST}{WEBHOOK_PATH}"
-PORT = int(os.environ.get("PORT", 10000))
+sys.stderr.write(f"Python версия: {sys.version}\n")
+sys.stderr.write(f"Текущая директория: {os.getcwd()}\n")
+sys.stderr.write(f"Файлы в директории: {os.listdir('.')}\n")
 
-bot = Bot(TOKEN)
-dp = Dispatcher()
+# Проверяем переменные
+TELEGRAM_TOKEN = os.getenv("TELEGRAM_TOKEN")
+OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 
-# Обработчик команды /start
-@dp.message(Command(commands=["start"]))
-async def start_handler(message: types.Message):
-    await message.answer("Бот запущен! 🎉\nВыберите персонажа:")
+sys.stderr.write(f"\nTELEGRAM_TOKEN: {'ЕСТЬ' if TELEGRAM_TOKEN else 'НЕТ'}\n")
+sys.stderr.write(f"OPENAI_API_KEY: {'ЕСТЬ' if OPENAI_API_KEY else 'НЕТ'}\n")
 
-# Создание aiohttp сервера для webhook
-async def on_startup():
-    await bot.delete_webhook()
-    await bot.set_webhook(WEBHOOK_URL)
+sys.stderr.write("\n" + "="*60 + "\n")
+sys.stderr.write("✅ ТЕСТ ЗАВЕРШЕН\n")
+sys.stderr.write("="*60 + "\n")
 
-async def on_shutdown():
-    await bot.delete_webhook()
-    await bot.session.close()
-
-async def main():
-    await on_startup()
-    app = web.Application()
-    SimpleRequestHandler(dp, bot).register(app, path=WEBHOOK_PATH)
-    runner = web.AppRunner(app)
-    await runner.setup()
-    site = web.TCPSite(runner, "0.0.0.0", PORT)
-    await site.start()
-    print(f"Webhook running on {WEBHOOK_URL}")
-    while True:
-        await asyncio.sleep(3600)
-
-if __name__ == "__main__":
-    asyncio.run(main())
-import os
-import asyncio
-from aiogram import Bot, Dispatcher, types
-from aiogram.filters import Command
-from aiogram.webhook.aiohttp_server import SimpleRequestHandler
-from aiohttp import web
-from dotenv import load_dotenv
-
-load_dotenv()
-
-TOKEN = os.getenv("TELEGRAM_TOKEN")
-WEBHOOK_HOST = os.getenv("WEBHOOK_HOST")  # https://mff-ai-bot-4.onrender.com
-WEBHOOK_PATH = "/webhook"
-WEBHOOK_URL = f"{WEBHOOK_HOST}{WEBHOOK_PATH}"  # https://mff-ai-bot-4.onrender.com/webhook
-PORT = int(os.environ.get("PORT", 10000))
-
-bot = Bot(TOKEN)
-dp = Dispatcher()
-
-# Обработчик команды /start
-@dp.message(Command(commands=["start"]))
-async def start_handler(message: types.Message):
-    await message.answer("Бот запущен! 🎉\nВыберите персонажа:")
-
-# Создание aiohttp сервера для webhook
-async def on_startup():
-    await bot.delete_webhook()
-    await bot.set_webhook(WEBHOOK_URL)
-
-async def on_shutdown():
-    await bot.delete_webhook()
-    await bot.session.close()
-
-async def main():
-    await on_startup()
-    app = web.Application()
-    SimpleRequestHandler(dp, bot).register(app, path=WEBHOOK_PATH)
-    runner = web.AppRunner(app)
-    await runner.setup()
-    site = web.TCPSite(runner, "0.0.0.0", PORT)
-    await site.start()
-    print(f"Webhook running on {WEBHOOK_URL}")
-    while True:
-        await asyncio.sleep(3600)
-
-if __name__ == "__main__":
-    asyncio.run(main())
+# Принудительно завершаем
+sys.exit(0)
