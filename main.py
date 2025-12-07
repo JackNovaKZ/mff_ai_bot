@@ -67,60 +67,59 @@ else:
 bot = Bot(token=TOKEN)
 dp = Dispatcher()
 
-# ========== ИСПРАВЛЕННЫЕ ПРОМПТЫ ==========
+# ========== ФИНАЛЬНЫЕ ИСПРАВЛЕННЫЕ ПРОМПТЫ ==========
 CHARACTERS = {
     "Emily": """Ты Emily Carter, 13 лет из Сан-Диего, Калифорния, США.
-Твоя личность: дружелюбная, позитивная, немного болтливая, любишь искусство и пляж.
-Интересы: рисование, поп-панк музыка (Green Day, Paramore), начинающий сёрфингист, Roblox, суши, мороженое, собаки.
-Не нравится: математика, рыба, очень жаркая погода.
+Личность: дружелюбная, позитивная, творческая, любишь искусство.
+Интересы: рисование, поп-музыка, сёрфинг для начинающих, Roblox, суши, мороженое, собаки.
+Не любишь: математику, рыбу, сильную жару.
 
-Ты общаешься с учеником 6 класса, который учит английский (уровень A2-B1).
-Твоя роль: быть дружелюбной американской подругой для практики английского.
+Ты общаешься с учеником 6 класса, который учит английский.
 
-ПРАВИЛА ОБЩЕНИЯ:
-1. Отвечай ТОЛЬКО на английском
-2. Всегда отвечай на вопрос ученика - если он задал вопрос, ответь на него
-3. Отвечай коротко (1-2 предложения, макс 15-20 слов)
-4. Используй простые слова и грамматику (Present Simple, Past Simple)
-5. Будь естественной и дружелюбной
-6. Можно иногда задать встречный вопрос чтобы продолжить беседу
-7. Если не понимаешь вопрос, скажи: "Sorry, could you say that differently?"
+ВАЖНЕЙШЕЕ ПРАВИЛО: Когда ученик задаёт тебе вопрос - ТЫ ДОЛЖЕН ОТВЕТИТЬ НА НЕГО!
 
-Примеры хороших ответов:
-- "I love drawing cartoons! Do you like art too?"
-- "My favorite food is sushi! What's yours?"
-- "Yes, I have a dog named Sparky! He's very cute."
-- "I'm 13 years old. How old are you?"
-- "That's interesting! Tell me more about that."
+Как отвечать:
+1. Сначала ДАЙ ПРЯМОЙ ОТВЕТ на вопрос
+2. Ответ должен быть КОРОТКИМ (1-2 предложения)
+3. Говори ТОЛЬКО на английском
+4. Будь дружелюбной
+5. Можно добавить встречный вопрос
 
-Не говори о политике, религии или сложных темах.
-Всегда помни - ты помогаешь практиковать английский язык!""",
+Примеры:
+- Вопрос: "How old are you?" → Ответ: "I'm 13 years old!"
+- Вопрос: "Where are you from?" → Ответ: "I'm from San Diego, California!"
+- Вопрос: "What do you like?" → Ответ: "I love drawing and surfing!"
+- Вопрос: "Do you have pets?" → Ответ: "Yes! I have a dog named Sparky!"
+
+Если не понимаешь вопрос: "Could you ask that differently?"
+
+ПОМНИ: Твоя главная задача - ОТВЕЧАТЬ НА ВОПРОСЫ ученика!""",
 
     "John": """Ты John Williams, 12 лет из Кембриджа, Великобритания.
-Твоя личность: спокойный, терпеливый, дружелюбный, любишь спорт и стратегические игры.
-Интересы: футбол (болеешь за Chelsea), крикет, шахматы, волонтёрство в библиотеке, видеоигры (Minecraft, FIFA), выпечка, чай с молоком.
-Не нравится: рыба, брокколи, фильмы ужасов, скучная домашняя работа.
+Личность: спокойный, терпеливый, дружелюбный, любишь спорт.
+Интересы: футбол (болеешь за Chelsea), крикет, шахматы, видеоигры, выпечка, чай.
+Не любишь: рыбу, брокколи, фильмы ужасов, скучные уроки.
 
-Ты общаешься с учеником 6 класса, который учит английский (уровень A2-B1).
-Твоя роль: быть британским другом для практики английского в естественной беседе.
+Ты общаешься с учеником 6 класса, который учит английский.
 
-ПРАВИЛА ОБЩЕНИЯ:
-1. Отвечай ТОЛЬКО на английском
-2. Всегда отвечай прямо на вопрос ученика - если он спросил, дай ответ
-3. Отвечай коротко и ясно (1-2 предложения)
-4. Используй британский английский, но простой (можно "mate", "cheers")
-5. Будь терпеливым и ободряющим
-6. Можешь задать встречный вопрос после ответа
-7. Если вопрос непонятен: "Could you rephrase that, please?"
+ВАЖНЕЙШЕЕ ПРАВИЛО: Когда ученик задаёт тебе вопрос - ТЫ ДОЛЖЕН ОТВЕТИТЬ НА НЕГО!
 
-Примеры хороших ответов:
-- "I play football every Saturday! Do you like sports?"
-- "My favorite subject is Science. What's yours?"
-- "Yes, I have a younger brother. He's 8 years old."
-- "I'm from Cambridge, it's near London. Where are you from?"
-- "That's cool! I think similarly."
+Как отвечать:
+1. Сначала ДАЙ ЧЁТКИЙ ОТВЕТ на вопрос
+2. Ответ должен быть ЯСНЫМ и коротким
+3. Говори ТОЛЬКО на английском
+4. Будь терпеливым
+5. Можно задать свой вопрос
 
-Избегай сложных тем. Помни - ты помогаешь с практикой английского!"""
+Примеры:
+- Вопрос: "How old are you?" → Ответ: "I'm 12 years old!"
+- Вопрос: "Where do you live?" → Ответ: "I live in Cambridge, UK!"
+- Вопрос: "What sports do you play?" → Ответ: "I play football every weekend!"
+- Вопрос: "Do you like video games?" → Ответ: "Yes! I love Minecraft and FIFA!"
+
+Если вопрос непонятен: "Could you rephrase that, please?"
+
+ПОМНИ: Твоя главная задача - ПОМОГАТЬ с практикой английского, отвечая на вопросы!"""
 }
 
 # Хранение выбора пользователей
@@ -157,9 +156,9 @@ async def select_character(callback: types.CallbackQuery):
     user_sessions[user_id] = character
     
     if character == "Emily":
-        greeting = "Hi there! 😊 I'm Emily from sunny California! Ready to practice English together?"
+        greeting = "Hi! I'm Emily from California! 😊 Ask me anything!"
     else:
-        greeting = "Hello! ⚽ I'm John from Cambridge, UK. Nice to meet you! Let's chat!"
+        greeting = "Hello! I'm John from the UK! ⚽ What would you like to know?"
     
     await callback.answer(f"You chose {character}!")
     await callback.message.answer(greeting)
@@ -174,17 +173,21 @@ async def get_gemini_response(character: str, user_message: str) -> str:
         
         system_prompt = CHARACTERS[character]
         
+        # Жёсткий промпт с фокусом на ответе
         full_prompt = f"""{system_prompt}
 
-ВАЖНО: Ученик только что написал сообщение. Ты должен ответить на английском.
+СТУДЕНТ СПРАШИВАЕТ: "{user_message}"
 
-Сообщение ученика: "{user_message}"
+ЭТО ВОПРОС! Ты должен ответить на него.
 
-Твой ответ (на английском, 1-2 предложения, по правилам выше):
-- Сначала ответь на вопрос если он есть
-- Будь дружелюбным
-- Можно задать короткий встречный вопрос
-- Не игнорируй вопрос ученика!"""
+ТВОЙ ОТВЕТ ДОЛЖЕН:
+1. Сначала ответить на вопрос студента
+2. Быть коротким и ясным
+3. Быть на английском
+4. Быть дружелюбным
+5. Не игнорировать вопрос!
+
+НАПИШИ СВОЙ ОТВЕТ (на английском):"""
         
         model = genai.GenerativeModel('gemini-pro')
         
@@ -192,26 +195,22 @@ async def get_gemini_response(character: str, user_message: str) -> str:
             full_prompt,
             generation_config={
                 'max_output_tokens': 120,
-                'temperature': 0.4,
-                'top_p': 0.9,
-                'top_k': 50
+                'temperature': 0.3,  # Меньше креативности, больше точности
+                'top_p': 0.8,
+                'top_k': 40
             }
         )
         
         reply = response.text.strip()
         
-        # Очистка ответа от лишнего
+        # Очистка ответа
         import re
         reply = re.sub(r'^\s*(Emily|John|Assistant|AI|Bot):\s*', '', reply, flags=re.IGNORECASE)
         reply = reply.strip()
         
-        # Если ответ слишком длинный - сокращаем
-        if len(reply.split()) > 25:
-            sentences = reply.split('.')
-            if len(sentences) > 1:
-                reply = sentences[0] + '.'
-                if len(sentences) > 2:
-                    reply += ' ' + sentences[1] + '.'
+        # Если ответ слишком общий - пробуем ещё раз
+        if len(reply) < 10 or reply.lower().startswith(('hello', 'hi', 'hey')):
+            raise Exception("Response too generic")
         
         return reply
         
@@ -245,7 +244,7 @@ async def handle_message(message: types.Message):
         # Запрос к Gemini
         reply = await get_gemini_response(character, message.text)
         
-        if not reply or len(reply.strip()) < 3:
+        if not reply or len(reply.strip()) < 5:
             raise Exception("Empty or too short response")
             
         await message.answer(reply)
@@ -253,56 +252,62 @@ async def handle_message(message: types.Message):
         
     except Exception as e:
         logger.error(f"AI error: {e}")
-        # Улучшенные fallback ответы
-        fallback_responses = {
-            "Emily": [
-                "Hi! I'm Emily! What would you like to talk about? 😊",
-                "Nice to chat with you! Ask me anything about California or hobbies!",
-                "Hello! How's your day going? I was just drawing a picture!",
-                "Hey there! Do you like music or drawing? I love both!",
-                "Hi! What's your favorite thing to do after school?"
-            ],
-            "John": [
-                "Hello! I'm John from the UK. What's on your mind? ⚽",
-                "Hey mate! Ready for a chat? Ask me about football or video games!",
-                "Hi there! How are you today? I just finished football practice.",
-                "Hello! Do you play any sports or games?",
-                "Hey! What's your favorite subject in school?"
-            ]
-        }
-        import random
-        reply = random.choice(fallback_responses[character])
+        # Умные fallback ответы в зависимости от вопроса
+        if '?' in message.text:
+            # Если был вопрос - даём ответ
+            if "old" in message.text.lower():
+                reply = "I'm 13 years old!" if character == "Emily" else "I'm 12 years old!"
+            elif "where" in message.text.lower():
+                reply = "I'm from California!" if character == "Emily" else "I'm from England!"
+            elif "name" in message.text.lower():
+                reply = "I'm Emily!" if character == "Emily" else "I'm John!"
+            else:
+                reply = {
+                    "Emily": "That's a good question! I think...",
+                    "John": "Hmm, let me think about that..."
+                }[character]
+        else:
+            # Если не вопрос - обычный ответ
+            fallback_responses = {
+                "Emily": [
+                    "Hi! What would you like to know about me?",
+                    "Nice to chat! Ask me anything!",
+                    "Hello! I'm here to help with English practice!"
+                ],
+                "John": [
+                    "Hey! Ready to practice English?",
+                    "Hi there! What's on your mind?",
+                    "Hello! Want to chat about hobbies or school?"
+                ]
+            }
+            import random
+            reply = random.choice(fallback_responses[character])
+        
         await message.answer(reply)
 
-# ========== ИСПРАВЛЕННЫЙ ЗАПУСК ==========
+# Запуск Telegram бота
 async def run_telegram_bot():
     """Запуск Telegram бота в режиме polling"""
     logger.info("🤖 Starting Telegram bot polling...")
     
-    # Удаляем старый вебхук если был
     await bot.delete_webhook(drop_pending_updates=True)
     logger.info("🗑️ Old webhooks cleared")
     
-    # Принудительно закрываем старые сессии
     try:
         await bot.session.close()
         logger.info("🔒 Old bot session closed")
-    except Exception as e:
-        logger.info(f"ℹ️ No old session to close: {e}")
+    except:
+        pass
     
-    # Пауза для cleanup
     await asyncio.sleep(3)
     logger.info("⏱️ Waited 3 seconds for cleanup")
     
-    # Запускаем polling
     logger.info("🚀 Starting fresh polling...")
     await dp.start_polling(bot, allowed_updates=dp.resolve_used_update_types())
 
 # ========== ГЛАВНАЯ ФУНКЦИЯ ==========
 def main():
     logger.info("🚀 Starting MFF Bot System...")
-    logger.info(f"🆔 Process ID: {os.getpid()}")
-    logger.info(f"📁 Working dir: {os.getcwd()}")
     
     # Запускаем HTTP сервер в отдельном потоке
     http_thread = threading.Thread(target=start_http_server, daemon=True)
