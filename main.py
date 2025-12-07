@@ -93,7 +93,7 @@ async def ask_deepseek(character: str, user_message: str) -> str:
 - "Where are you from?" -> "I'm from Cambridge, England!"
 - "What do you like?" -> "I love football and chess!"
 
-Если не понимаешь вопрос, скажи: "Could you rephrase that?"
+Если не понимаешь вопрос, скажи: "Could you rephrase that?""
         
         # Используем DeepSeek API
         async with aiohttp.ClientSession() as session:
