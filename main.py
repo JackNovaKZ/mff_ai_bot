@@ -1,3 +1,5 @@
+# main.py - ПОЛНЫЙ ИСПРАВЛЕННЫЙ КОД
+
 import os
 import sys
 import logging
@@ -65,21 +67,21 @@ dp = Dispatcher()
 async def ask_deepseek(character: str, user_message: str) -> str:
     """Запрашиваем ответ у DeepSeek (меня)"""
     try:
-        # Промпт для DeepSeek - ВСЕ КАВЫЧКИ ИСПРАВЛЕНЫ!
+        # Промпт для DeepSeek
         if character == "Emily":
             system_prompt = """Ты Emily Carter, 13 лет из Сан-Диего, Калифорния.
 Ты дружелюбная, позитивная, любишь рисование, музыку и сёрфинг.
 Ты общаешься с учеником 6 класса, который учит английский.
 
 ВАЖНО: Всегда отвечай на вопросы ученика прямо и чётко!
-Отвечай только на английском, коротко (1-2 предложения), дружелюбно.
+Отвечай только на английном, коротко (1-2 предложения), дружелюбно.
 
 Примеры:
 - "How old are you?" -> "I'm 13 years old!"
 - "Where are you from?" -> "I'm from San Diego, California!"
 - "What do you like?" -> "I love drawing and surfing!"
 
-Если не понимаешь вопрос, скажи: "Could you ask that differently?""
+Если не понимаешь вопрос, скажи: "Could you ask that differently?""""
         else:  # John
             system_prompt = """Ты John Williams, 12 лет из Кембриджа, Англия.
 Ты спокойный, терпеливый, любишь футбол, шахматы и видеоигры.
@@ -93,7 +95,7 @@ async def ask_deepseek(character: str, user_message: str) -> str:
 - "Where are you from?" -> "I'm from Cambridge, England!"
 - "What do you like?" -> "I love football and chess!"
 
-Если не понимаешь вопрос, скажи: "Could you rephrase that?""
+Если не понимаешь вопрос, скажи: "Could you rephrase that?""""
         
         # Используем DeepSeek API
         async with aiohttp.ClientSession() as session:
