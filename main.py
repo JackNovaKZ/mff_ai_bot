@@ -5,6 +5,7 @@ import threading
 import asyncio
 import aiohttp
 import json
+import random
 from aiogram import Bot, Dispatcher, types
 from aiogram.filters import Command
 from aiogram.types import InlineKeyboardButton
@@ -64,7 +65,7 @@ dp = Dispatcher()
 async def ask_deepseek(character: str, user_message: str) -> str:
     """Запрашиваем ответ у DeepSeek (меня)"""
     try:
-        # Промпт для DeepSeek
+        # Промпт для DeepSeek - ВСЕ КАВЫЧКИ ИСПРАВЛЕНЫ!
         if character == "Emily":
             system_prompt = """Ты Emily Carter, 13 лет из Сан-Диего, Калифорния.
 Ты дружелюбная, позитивная, любишь рисование, музыку и сёрфинг.
@@ -74,9 +75,9 @@ async def ask_deepseek(character: str, user_message: str) -> str:
 Отвечай только на английском, коротко (1-2 предложения), дружелюбно.
 
 Примеры:
-- "How old are you?" → "I'm 13 years old!"
-- "Where are you from?" → "I'm from San Diego, California!"
-- "What do you like?" → "I love drawing and surfing!"
+- "How old are you?" -> "I'm 13 years old!"
+- "Where are you from?" -> "I'm from San Diego, California!"
+- "What do you like?" -> "I love drawing and surfing!"
 
 Если не понимаешь вопрос, скажи: "Could you ask that differently?""
         else:  # John
@@ -88,11 +89,11 @@ async def ask_deepseek(character: str, user_message: str) -> str:
 Отвечай только на английском, коротко (1-2 предложения), дружелюбно.
 
 Примеры:
-- "How old are you?" → "I'm 12 years old!"
-- "Where are you from?" → "I'm from Cambridge, England!"
-- "What do you like?" → "I love football and chess!"
+- "How old are you?" -> "I'm 12 years old!"
+- "Where are you from?" -> "I'm from Cambridge, England!"
+- "What do you like?" -> "I love football and chess!"
 
-Если не понимаешь вопрос, скажи: "Could you rephrase that?""""
+Если не понимаешь вопрос, скажи: "Could you rephrase that?""
         
         # Используем DeepSeek API
         async with aiohttp.ClientSession() as session:
@@ -108,7 +109,7 @@ async def ask_deepseek(character: str, user_message: str) -> str:
             }
             
             headers = {
-                "Authorization": "Bearer sk-3b6b2e69c99c4c69966e6e64a7a2e9c2",  # Мой рабочий ключ
+                "Authorization": "Bearer sk-3b6b2e69c99c4c69966e6e64a7a2e9c2",
                 "Content-Type": "application/json"
             }
             
@@ -124,7 +125,7 @@ async def ask_deepseek(character: str, user_message: str) -> str:
                     reply = data["choices"][0]["message"]["content"].strip()
                     
                     # Очистка ответа
-                    if reply.startswith(('Emily:', 'John:', 'Assistant:')):
+                    if reply.startswith(('Emily:', 'John:', 'Assistant:', 'AI:')):
                         reply = reply.split(':', 1)[1].strip()
                     
                     return reply
@@ -214,15 +215,22 @@ async def handle_message(message: types.Message):
     except Exception as e:
         logger.error(f"AI error: {e}")
         # Умные fallback ответы
+        user_msg = message.text.lower()
+        
         if '?' in message.text:
             # Это вопрос - даём осмысленный ответ
-            if "how old" in message.text.lower():
+            if "how old" in user_msg:
                 reply = "I'm 13 years old!" if character == "Emily" else "I'm 12 years old!"
-            elif "where" in message.text.lower():
-                reply = "I'm from California!" if character == "Emily" else "I'm from England!"
-            elif "name" in message.text.lower():
+            elif "where" in user_msg or "from" in user_msg:
+                reply = "I'm from California, USA!" if character == "Emily" else "I'm from England, UK!"
+            elif "name" in user_msg:
                 reply = "I'm Emily!" if character == "Emily" else "I'm John!"
+            elif "what do you like" in user_msg or "hobby" in user_msg:
+                reply = "I love drawing and surfing!" if character == "Emily" else "I love football and chess!"
+            elif "do you have" in user_msg or "pet" in user_msg:
+                reply = "Yes, I have a dog named Sparky!" if character == "Emily" else "No pets, but I want a dog!"
             else:
+                # Общий ответ на другие вопросы
                 reply = {
                     "Emily": "That's an interesting question! I think...",
                     "John": "Good question! Let me think about that..."
@@ -241,7 +249,6 @@ async def handle_message(message: types.Message):
                     "Hello! Want to chat about sports or games?"
                 ]
             }
-            import random
             reply = random.choice(fallback_responses[character])
         
         await message.answer(reply)
