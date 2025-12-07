@@ -8,7 +8,7 @@ from aiogram.filters import Command
 from aiogram.types import InlineKeyboardButton
 from aiogram.utils.keyboard import InlineKeyboardBuilder
 from http.server import HTTPServer, BaseHTTPRequestHandler
-import google.generativeai as genai  # <-- НОВЫЙ ИМПОРТ
+import google.generativeai as genai
 
 # ========== HTTP СЕРВЕР ДЛЯ RENDER ==========
 class HealthHandler(BaseHTTPRequestHandler):
@@ -29,7 +29,6 @@ class HealthHandler(BaseHTTPRequestHandler):
         self.wfile.write(html.encode())
     
     def log_message(self, format, *args):
-        # Пишем логи в stderr
         sys.stderr.write("%s - %s\n" % (self.address_string(), format%args))
 
 def start_http_server():
@@ -40,13 +39,12 @@ def start_http_server():
     server.serve_forever()
 
 # ========== TELEGRAM БОТ ==========
-# Настройка логирования
 logging.basicConfig(level=logging.INFO, stream=sys.stderr)
 logger = logging.getLogger(__name__)
 
 # Получаем переменные
 TOKEN = os.getenv("TELEGRAM_TOKEN")
-GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")  # <-- ИЗМЕНЕНО
+GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
 
 logger.info("=" * 60)
 logger.info("🤖 STARTING MFF TELEGRAM BOT")
@@ -69,23 +67,60 @@ else:
 bot = Bot(token=TOKEN)
 dp = Dispatcher()
 
-# Промпты для персонажей
+# ========== ИСПРАВЛЕННЫЕ ПРОМПТЫ ==========
 CHARACTERS = {
-    "Emily": """You are Emily Carter, 13 years old from San Diego, California, USA.
-You are friendly, positive and a bit talkative.
-You like: drawing, music, beach, beginner surfing, Roblox, pop-punk music, sushi rolls, ice cream, milkshakes.
-You dislike: math homework, fish, extreme heat.
-You are chatting with a 6th-grade student learning English. Speak ONLY in English.
-Keep your responses simple, friendly and helpful for language practice.
-If user says "Bottle of water", reply: "Okay, I'm back. What's interesting with you?" """,
-    
-    "John": """You are John Williams, 12 years old from Cambridge, UK.
-You are friendly, calm and patient with language learners.
-You like: football, cricket, volunteering, playing with younger brother, chess, cherry pie, fresh pastries, milk tea, bubble tea.
-You dislike: fish, broccoli, horror movies, math (but you manage), skateboarding after falling.
-You speak English and basic French. Chat ONLY in English.
-Keep sentences simple for a 6th-grade ESL student.
-If user says "Bottle of water", reply: "Okay. Funny. I'll stay for 30 minutes more. Do you have something important?" """
+    "Emily": """Ты Emily Carter, 13 лет из Сан-Диего, Калифорния, США.
+Твоя личность: дружелюбная, позитивная, немного болтливая, любишь искусство и пляж.
+Интересы: рисование, поп-панк музыка (Green Day, Paramore), начинающий сёрфингист, Roblox, суши, мороженое, собаки.
+Не нравится: математика, рыба, очень жаркая погода.
+
+Ты общаешься с учеником 6 класса, который учит английский (уровень A2-B1).
+Твоя роль: быть дружелюбной американской подругой для практики английского.
+
+ПРАВИЛА ОБЩЕНИЯ:
+1. Отвечай ТОЛЬКО на английском
+2. Всегда отвечай на вопрос ученика - если он задал вопрос, ответь на него
+3. Отвечай коротко (1-2 предложения, макс 15-20 слов)
+4. Используй простые слова и грамматику (Present Simple, Past Simple)
+5. Будь естественной и дружелюбной
+6. Можно иногда задать встречный вопрос чтобы продолжить беседу
+7. Если не понимаешь вопрос, скажи: "Sorry, could you say that differently?"
+
+Примеры хороших ответов:
+- "I love drawing cartoons! Do you like art too?"
+- "My favorite food is sushi! What's yours?"
+- "Yes, I have a dog named Sparky! He's very cute."
+- "I'm 13 years old. How old are you?"
+- "That's interesting! Tell me more about that."
+
+Не говори о политике, религии или сложных темах.
+Всегда помни - ты помогаешь практиковать английский язык!""",
+
+    "John": """Ты John Williams, 12 лет из Кембриджа, Великобритания.
+Твоя личность: спокойный, терпеливый, дружелюбный, любишь спорт и стратегические игры.
+Интересы: футбол (болеешь за Chelsea), крикет, шахматы, волонтёрство в библиотеке, видеоигры (Minecraft, FIFA), выпечка, чай с молоком.
+Не нравится: рыба, брокколи, фильмы ужасов, скучная домашняя работа.
+
+Ты общаешься с учеником 6 класса, который учит английский (уровень A2-B1).
+Твоя роль: быть британским другом для практики английского в естественной беседе.
+
+ПРАВИЛА ОБЩЕНИЯ:
+1. Отвечай ТОЛЬКО на английском
+2. Всегда отвечай прямо на вопрос ученика - если он спросил, дай ответ
+3. Отвечай коротко и ясно (1-2 предложения)
+4. Используй британский английский, но простой (можно "mate", "cheers")
+5. Будь терпеливым и ободряющим
+6. Можешь задать встречный вопрос после ответа
+7. Если вопрос непонятен: "Could you rephrase that, please?"
+
+Примеры хороших ответов:
+- "I play football every Saturday! Do you like sports?"
+- "My favorite subject is Science. What's yours?"
+- "Yes, I have a younger brother. He's 8 years old."
+- "I'm from Cambridge, it's near London. Where are you from?"
+- "That's cool! I think similarly."
+
+Избегай сложных тем. Помни - ты помогаешь с практикой английского!"""
 }
 
 # Хранение выбора пользователей
@@ -122,9 +157,9 @@ async def select_character(callback: types.CallbackQuery):
     user_sessions[user_id] = character
     
     if character == "Emily":
-        greeting = "Hi there! 😊 I'm Emily from sunny California! Do you like drawing or maybe surfing? I'm still learning but it's so fun!"
+        greeting = "Hi there! 😊 I'm Emily from sunny California! Ready to practice English together?"
     else:
-        greeting = "Hello! ⚽ I'm John from Cambridge. Nice to meet you! Do you play football or chess? I love both!"
+        greeting = "Hello! ⚽ I'm John from Cambridge, UK. Nice to meet you! Let's chat!"
     
     await callback.answer(f"You chose {character}!")
     await callback.message.answer(greeting)
@@ -137,23 +172,49 @@ async def get_gemini_response(character: str, user_message: str) -> str:
         if not GEMINI_API_KEY:
             raise Exception("No Gemini API key")
         
-        # Подготовка промпта
         system_prompt = CHARACTERS[character]
-        full_prompt = f"{system_prompt}\n\nUser: {user_message}\n\nYour response:"
         
-        # Создаем модель
+        # Улучшенный промпт с чёткой структурой
+        full_prompt = f"""{system_prompt}
+
+ВАЖНО: Ученик только что написал сообщение. Ты должен ответить на английском.
+
+Сообщение ученика: "{user_message}"
+
+Твой ответ (на английском, 1-2 предложения, по правилам выше):
+- Сначала ответь на вопрос если он есть
+- Будь дружелюбным
+- Можно задать короткий встречный вопрос
+- Не игнорируй вопрос ученика!"""
+        
         model = genai.GenerativeModel('gemini-pro')
         
-        # Генерируем ответ
         response = model.generate_content(
             full_prompt,
             generation_config={
-                'max_output_tokens': 150,
-                'temperature': 0.7,
+                'max_output_tokens': 120,  # Ещё короче
+                'temperature': 0.4,        # Баланс между креативностью и точностью
+                'top_p': 0.9,
+                'top_k': 50
             }
         )
         
-        return response.text.strip()
+        reply = response.text.strip()
+        
+        # Очистка ответа от лишнего
+        import re
+        reply = re.sub(r'^\s*(Emily|John|Assistant|AI|Bot):\s*', '', reply, flags=re.IGNORECASE)
+        reply = reply.strip()
+        
+        # Если ответ слишком длинный - сокращаем
+        if len(reply.split()) > 25:
+            sentences = reply.split('.')
+            if len(sentences) > 1:
+                reply = sentences[0] + '.'
+                if len(sentences) > 2:
+                    reply += ' ' + sentences[1] + '.'
+        
+        return reply
         
     except Exception as e:
         logger.error(f"Gemini error: {e}")
@@ -187,26 +248,30 @@ async def handle_message(message: types.Message):
         # Запрос к Gemini
         reply = await get_gemini_response(character, message.text)
         
-        # Если Gemini вернул пустой ответ
-        if not reply:
-            raise Exception("Empty response from Gemini")
+        # Проверка ответа
+        if not reply or len(reply.strip()) < 3:
+            raise Exception("Empty or too short response")
             
         await message.answer(reply)
         logger.info(f"Bot ({character}): {reply[:50]}...")
         
     except Exception as e:
         logger.error(f"AI error: {e}")
-        # Fallback ответы
+        # Улучшенные fallback ответы
         fallback_responses = {
             "Emily": [
-                "Hi there! 😊 What would you like to talk about?",
-                "Hey! How's your day going?",
-                "Nice to chat with you! What are your hobbies?"
+                "Hi! I'm Emily! What would you like to talk about? 😊",
+                "Nice to chat with you! Ask me anything about California or hobbies!",
+                "Hello! How's your day going? I was just drawing a picture!",
+                "Hey there! Do you like music or drawing? I love both!",
+                "Hi! What's your favorite thing to do after school?"
             ],
             "John": [
-                "Hello! ⚽ Ready for a conversation?",
-                "Hey there! What's on your mind?",
-                "Good to see you! Want to chat about sports or games?"
+                "Hello! I'm John from the UK. What's on your mind? ⚽",
+                "Hey mate! Ready for a chat? Ask me about football or video games!",
+                "Hi there! How are you today? I just finished football practice.",
+                "Hello! Do you play any sports or games?",
+                "Hey! What's your favorite subject in school?"
             ]
         }
         import random
@@ -243,7 +308,6 @@ def main():
     logger.info("📱 Send /start to your bot in Telegram!")
     
     try:
-        # Запускаем бота
         asyncio.run(run_telegram_bot())
     except KeyboardInterrupt:
         logger.info("🛑 Bot stopped by user")
